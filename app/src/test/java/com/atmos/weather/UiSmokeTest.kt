@@ -37,6 +37,8 @@ class UiSmokeTest {
     @Test fun emptyStateNavigatesToSearchAndSettingsWithoutAnyWeatherFabrication() {
         compose.onNodeWithText("Find my atmosphere ↗").assertExists().performClick()
         compose.onNodeWithText("Search cities").assertExists()
+        compose.onNodeWithText("Radar",useUnmergedTree=true).performClick()
+        compose.onNodeWithText("Select a saved city in Places to see radar around it.").assertExists()
         compose.onNodeWithText("Settings",useUnmergedTree=true).performClick()
         compose.onNodeWithText("24-hour time (default is AM/PM)").performScrollTo().assertExists()
         compose.onNodeWithText("24-hour time (default is AM/PM)").performClick()

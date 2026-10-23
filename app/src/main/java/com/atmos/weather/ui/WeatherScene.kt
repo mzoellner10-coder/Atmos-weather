@@ -31,7 +31,7 @@ import kotlin.math.*
     val prefs = LocalExperience.current
     val reduced = LocalReducedMotion.current || prefs.motionMode == "Minimal"
     val clock = rememberSceneClock(!reduced)
-    val feedback = rememberFeedback()
+    val feedback = rememberFeedback(UiCue.Sculpture)
     val scope = rememberCoroutineScope()
     val dragX = remember { Animatable(0f) }; val dragY = remember { Animatable(0f) }
     val pulse = remember { Animatable(0f) }

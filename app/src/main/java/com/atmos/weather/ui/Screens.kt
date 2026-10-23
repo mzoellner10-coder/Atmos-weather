@@ -42,13 +42,21 @@ private val Ice = Color(0xFFB8DAFF)
  BackHandler(screen!="Weather") {screen="Weather"}
  CompositionLocalProvider(LocalExperience provides prefs,LocalReducedMotion provides reduced) {
  MaterialTheme(colorScheme=scheme,typography=Typography()) {
- val feedback=rememberFeedback()
- WeatherAmbience(state.weather?.forecast?.current,prefs)
+ ProvideUiSounds(prefs.sounds) {
+ AtmosNavigation(vm,state,prefs,screen,{screen=it},locationMessage,locate,reduced,accent,scheme)
+ }
+ }
+ }
+}
+@Composable private fun AtmosNavigation(vm:WeatherViewModel,state:WeatherState,prefs:Settings,screen:String,navigate:(String)->Unit,locationMessage:String?,locate:()->Unit,reduced:Boolean,accent:Color,scheme:ColorScheme) {
+ val feedback=rememberFeedback(UiCue.Navigate)
+ val refreshFeedback=rememberFeedback(UiCue.Refresh)
+ if(screen=="Weather") WeatherAmbience(state.weather?.forecast?.current,prefs)
  Scaffold(containerColor=Color.Black,contentColor=scheme.onSurface,bottomBar={
- Surface(color=Color(0xFF101114),shape=RoundedCornerShape(32.dp),modifier=Modifier.navigationBarsPadding().padding(horizontal=44.dp,vertical=10.dp)) {
+ Surface(color=Color(0xFF101114),shape=RoundedCornerShape(32.dp),modifier=Modifier.navigationBarsPadding().padding(horizontal=12.dp,vertical=10.dp)) {
  Row(Modifier.fillMaxWidth().padding(6.dp),horizontalArrangement=Arrangement.SpaceEvenly) {
- listOf("Weather","Places","Settings").forEach { name ->
- TextButton(modifier=Modifier.weight(1f),onClick={feedback();screen=name},colors=ButtonDefaults.textButtonColors(contentColor=if(screen==name)accent else Color(0xFF8E9199))) {Text(name,fontWeight=if(screen==name)FontWeight.Bold else FontWeight.Normal)}
+ listOf("Weather","Radar","Places","Settings").forEach { name ->
+ TextButton(modifier=Modifier.weight(1f),contentPadding=PaddingValues(horizontal=4.dp,vertical=10.dp),onClick={if(screen!=name){feedback();navigate(name)}},colors=ButtonDefaults.textButtonColors(contentColor=if(screen==name)accent else Color(0xFF8E9199))) {Text(name,maxLines=1,fontSize=12.sp,fontWeight=if(screen==name)FontWeight.Bold else FontWeight.Normal)}
  }
  }
  }
@@ -56,14 +64,13 @@ private val Ice = Color(0xFFB8DAFF)
  AnimatedContent(targetState=screen,modifier=Modifier.padding(padding).fillMaxSize(),label="page",
  transitionSpec={ (fadeIn(tween(if(reduced)0 else 230))+slideInHorizontally(tween(if(reduced)0 else 260)){it/14}) togetherWith fadeOut(tween(if(reduced)0 else 120)) }) { route ->
  when(route) {
- "Places" -> Places(vm,prefs,locationMessage,locate) {screen="Weather"}
+ "Places" -> Places(vm,prefs,locationMessage,locate) {navigate("Weather")}
  "Settings" -> SettingsScreen(prefs,vm::change)
- "Weather" -> PullToRefreshBox(isRefreshing=state.loading,onRefresh={vm.refresh(true)}) {
- WeatherDashboard(state,prefs,{feedback();screen=it},{vm.refresh(true)},{feedback();screen="Places"})
+ "Radar" -> RadarScreen(prefs.city,state.weather?.forecast?.timezone ?: java.time.ZoneId.systemDefault().id,prefs)
+ "Weather" -> PullToRefreshBox(isRefreshing=state.loading,onRefresh={refreshFeedback();vm.refresh(true)}) {
+ WeatherDashboard(state,prefs,{feedback();navigate(it)},{refreshFeedback();vm.refresh(true)},{feedback();navigate("Places")})
  }
- else -> DetailScreen(route,state.weather,prefs) {screen="Weather"}
- }
- }
+ else -> DetailScreen(route,state.weather,prefs,{feedback();navigate("Weather")},{feedback();navigate("Radar")})
  }
  }
  }
@@ -119,7 +126,7 @@ fun metric(label:String,w:Weather,p:Settings):String {
  else -> ""
  }
 }
-@Composable private fun DetailScreen(screen:String,w:Weather?,p:Settings,back:()->Unit) {
+@Composable private fun DetailScreen(screen:String,w:Weather?,p:Settings,back:()->Unit,radar:()->Unit) {
  Column(Modifier.fillMaxSize()) {
  TextButton(onClick=back) { Text("‹  Weather") }
  if(w==null) { Text("Choose a location to view details.",Modifier.padding(24.dp)); return }
@@ -133,7 +140,7 @@ fun metric(label:String,w:Weather,p:Settings):String {
  }
  "16-day" -> item { WeatherCard("DAILY OUTLOOK") { DailyRows(w,p,16) } }
  "Precipitation" -> {
- item { Text(metric(screen,w,p),fontSize=48.sp); Text("Forecast total today. Radar is a future feature.",color=Ice) }
+ item { Text(metric(screen,w,p),fontSize=48.sp); Text("Forecast total today.",color=Ice); Button(onClick=radar) {Text("Open rain radar ↗")} }
  item { InteractiveGraph(h.precipitation_probability.drop(start).take(24),h.time.drop(start).take(24),"Chance of precipitation") { "${it.toInt()}%" } }
  item { InteractiveGraph(h.precipitation.drop(start).take(24),h.time.drop(start).take(24),"Precipitation amount") { "%.2f %s".format(if(p.inches)it/25.4 else it,if(p.inches)"in" else "mm") } }
  item { WeatherCard("RAIN & SNOW · NEXT HOUR") {
@@ -174,24 +181,26 @@ fun metric(label:String,w:Weather,p:Settings):String {
  }
 }
 @Composable private fun Places(vm:WeatherViewModel,p:Settings,message:String?,locate:()->Unit,done:()->Unit) {
+ val confirm=rememberFeedback(UiCue.Confirm)
+ val select=rememberFeedback(UiCue.Select)
  var query by remember { mutableStateOf("") }
  val results by vm.searchResults.collectAsStateWithLifecycle(); val error by vm.searchError.collectAsStateWithLifecycle()
  LazyColumn(contentPadding=PaddingValues(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
  item { Text("Your places",fontSize=36.sp,fontWeight=FontWeight.Light) }
  item { OutlinedTextField(value=query,onValueChange={query=it;vm.search(it)},label={Text("Search cities")},modifier=Modifier.fillMaxWidth(),singleLine=true) }
- item { Button(onClick=locate) { Text("Use current location") }; Text("Uses a single foreground location request, including approximate location. Saved coordinates support background weather refresh without GPS tracking.",fontSize=12.sp,color=Ice); if(message!=null)Text(message) }
+ item { Button(onClick={select();locate()}) { Text("Use current location") }; Text("Uses a single foreground location request, including approximate location. Saved coordinates support background weather refresh without GPS tracking.",fontSize=12.sp,color=Ice); if(message!=null)Text(message) }
  if(error!=null) item { Text(error!!,color=Ice) }
- results.forEach { city -> item { WeatherCard(city.country_code.orEmpty(), onClick={ vm.select(city);done() }) { Text(city.name,fontSize=23.sp); Text(city.admin1.orEmpty(),color=Ice) } } }
+ results.forEach { city -> item { WeatherCard(city.country_code.orEmpty(), onClick={ confirm();vm.select(city);done() }) { Text(city.name,fontSize=23.sp); Text(city.admin1.orEmpty(),color=Ice) } } }
  if(p.cities.isNotEmpty()) item { Text("SAVED LOCATIONS",color=Ice,fontSize=12.sp) }
- p.cities.forEach { city -> item { WeatherCard(if(city==p.city)"DEFAULT LOCATION" else "SAVED",onClick={vm.select(city);done()}) {
+ p.cities.forEach { city -> item { WeatherCard(if(city==p.city)"DEFAULT LOCATION" else "SAVED",onClick={confirm();vm.select(city);done()}) {
  Text(city.name,fontSize=24.sp)
- Row { TextButton(onClick={vm.select(city);done()}) { Text("Open / set default") }; TextButton(onClick={vm.remove(city)}) { Text("Remove") } }
+ Row { TextButton(onClick={confirm();vm.select(city);done()}) { Text("Open / set default") }; TextButton(onClick={select();vm.remove(city)}) { Text("Remove") } }
  } } }
  }
 }
 @Composable private fun SettingsScreen(p:Settings,change:((Settings)->Settings)->Unit) {
  val context=LocalContext.current
- val feedback=rememberFeedback()
+ val feedback=rememberFeedback(UiCue.Select)
  LazyColumn(contentPadding=PaddingValues(24.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
  item { Text("Make it yours",fontSize=36.sp,fontWeight=FontWeight.Light) }
  item { WeatherCard("UNITS") {
@@ -203,8 +212,14 @@ fun metric(label:String,w:Weather,p:Settings):String {
  listOf("Hybrid","Dynamic","OLED Black").forEach { theme -> Row(Modifier.fillMaxWidth().clickable {feedback();change{it.copy(theme=theme)}},verticalAlignment=Alignment.CenterVertically) { RadioButton(p.visualTheme==theme,{feedback();change{it.copy(theme=theme)}});Text(theme) } }
  Toggle("24-hour time (default is AM/PM)",p.time24) { v -> change { it.copy(time24=v) } }
  Toggle("Subtle haptics",p.haptics) { v -> change { it.copy(haptics=v) } }
- Toggle("Weather sounds",p.sounds) { v -> change { it.copy(sounds=v) } }
- Text("Original soft rain, wind and thunder ambience plays only while visible, in normal sound mode, and when other media is not playing. Off by default.",fontSize=12.sp,color=Ice)
+ Toggle("UI & weather sounds",p.sounds) { v -> change { it.copy(sounds=v) } }
+ Text("Soft notes for navigation, selections, switches, refresh, zoom, playback and the weather sculpture. Sounds respect silent mode and other playing media. Off by default.",fontSize=12.sp,color=Ice)
+ if(p.sounds) {
+ val preview=rememberFeedback(UiCue.Confirm)
+ TextButton(onClick=preview) {Text("Play sound preview")}
+ Toggle("Weather ambience",p.ambience) {v->change {it.copy(ambience=v)}}
+ Text("Optional soft rain, wind and thunder while the Weather page is visible.",fontSize=12.sp,color=Ice)
+ }
  Text("Animation intensity",color=Ice)
  Row { listOf("Full","Balanced","Minimal").forEach { mode -> FilterChip(p.motionMode==mode,{feedback();change{it.copy(motion=mode)}},label={Text(mode)},modifier=Modifier.padding(end=8.dp)) } }
  } }
@@ -221,8 +236,8 @@ fun metric(label:String,w:Weather,p:Settings):String {
  TextButton(onClick={context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse("https://open-meteo.com/")))}) {Text("Open-Meteo attribution & information")}
  TextButton(onClick={context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse("https://www.weather.gov/")))}) {Text("National Weather Service") }
  Text("For personal non-commercial use under Open-Meteo's free API terms. No API key required. Forecasts are predictions; follow official local warnings.")
- Text("Coordinates and search queries are sent to the relevant providers. Saved locations, forecasts and preferences remain on this device. No ads, analytics or account. Removing a city removes it from refresh scheduling; Android's Clear storage removes all local data.",color=Ice)
+ Text("Radar: RainViewer past observations. Basemap: © OpenStreetMap contributors (ODbL). Visible radar map areas are sent to these providers.\nCoordinates and search queries are sent to the relevant providers. Saved locations, forecasts and preferences remain on this device. No ads, analytics or account. Removing a city removes it from refresh scheduling; Android's Clear storage removes all local data.",color=Ice)
  } }
  }
 }
-@Composable private fun Toggle(label:String,checked:Boolean,onChange:(Boolean)->Unit) { Row(Modifier.fillMaxWidth().toggleable(value=checked,role=Role.Switch,onValueChange=onChange),verticalAlignment=Alignment.CenterVertically) { Text(label,Modifier.weight(1f));Switch(checked,null) } }
+@Composable private fun Toggle(label:String,checked:Boolean,onChange:(Boolean)->Unit) { val feedback=rememberFeedback(UiCue.Toggle); Row(Modifier.fillMaxWidth().toggleable(value=checked,role=Role.Switch,onValueChange={feedback();onChange(it)}),verticalAlignment=Alignment.CenterVertically) { Text(label,Modifier.weight(1f));Switch(checked,null) } }

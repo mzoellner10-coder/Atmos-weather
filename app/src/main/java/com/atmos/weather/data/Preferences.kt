@@ -11,7 +11,7 @@ private val Context.store by preferencesDataStore("atmos_preferences")
 data class Settings(val fahrenheit: Boolean = false, val mph: Boolean = false, val inches: Boolean = false,
  val followLocation: Boolean = false, val theme: String = "Hybrid", val motion: String = "Balanced", val refresh: Boolean = true,
  val cities: List<City> = emptyList(), val selected: Int = 0,
- val time24: Boolean = false, val sounds: Boolean = false, val haptics: Boolean = false) {
+ val time24: Boolean = false, val sounds: Boolean = false, val haptics: Boolean = false, val ambience: Boolean = true) {
  val city: City? get() = cities.getOrNull(selected)
  val visualTheme: String get() = when(theme) {
   "Dynamic Weather", "Dynamic" -> "Dynamic"

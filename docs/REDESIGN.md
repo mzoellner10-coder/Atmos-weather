@@ -1,5 +1,7 @@
 # Atmos Weather 2.0
 
+The subsequent 2.1 additions (native radar and expanded optional UI sounds) are documented in [RADAR_AND_SOUND.md](RADAR_AND_SOUND.md).
+
 The redesign is an original interpretation of the brief's tactile, playful weather philosophy: oversized editorial type, a dimensional weather object, touch-responsive movement, restrained data instruments, and black negative space. It uses no proprietary artwork, models, icons, recordings, branding or layouts. The reference site https://notboring.so/weather was attempted but blocked by this environment's outbound policy; no independent review of its current interface is claimed. The implementation follows the user's supplied visual brief.
 
 ## What changed

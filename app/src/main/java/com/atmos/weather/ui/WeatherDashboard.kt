@@ -67,6 +67,17 @@ import kotlinx.coroutines.launch
         w.alerts?.features.orEmpty().forEach { a -> item { WeatherCard("OFFICIAL WEATHER ALERT",Modifier.padding(horizontal=24.dp),{open("Alerts")}) {Text(a.properties.headline ?: a.properties.event ?: "NWS alert",fontWeight=FontWeight.SemiBold)} } }
         if(w.alertsUnavailable)item {Text("Official alerts unavailable. Check weather.gov for local warnings.",color=accent,modifier=Modifier.padding(horizontal=26.dp),fontSize=12.sp)}
         item {
+            WeatherCard("RADAR · RECENT HISTORY",Modifier.padding(horizontal=24.dp),{open("Radar")}) {
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Watch the rain move",fontSize=23.sp,fontWeight=FontWeight.Bold)
+                        Text("Observed radar around ${w.city.name}",fontSize=12.sp,color=Color(0xFFADB1BC))
+                    }
+                    Text("↗",fontSize=30.sp,color=accent,modifier=Modifier.padding(start=12.dp))
+                }
+            }
+        }
+        item {
             Column(Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(horizontal=24.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)) {
                     listOf("Hourly","16 days","Rain").forEachIndexed { i,name ->

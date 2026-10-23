@@ -21,7 +21,7 @@ object ExperienceAudio {
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
     private const val RATE = 22050
     private fun allowed(manager: AudioManager) = manager.ringerMode == AudioManager.RINGER_MODE_NORMAL && !manager.isMusicActive
-    private suspend fun play(context: Context, kind: String, forever: Boolean) = withContext(Dispatchers.IO) {
+    private suspend fun play(context: Context, kind: String) = withContext(Dispatchers.IO) {
         val manager = context.getSystemService(AudioManager::class.java)
         if (!allowed(manager)) return@withContext
         val focused = AtomicBoolean(true)
@@ -38,30 +38,28 @@ object ExperienceAudio {
             track.play()
             var seed = 1387L; var low = 0.0; var sample = 0L
             val buffer = ShortArray(1024)
-            while (currentCoroutineContext().isActive && focused.get() && allowed(manager) && (forever || sample < RATE / 8)) {
+            while (currentCoroutineContext().isActive && focused.get() && allowed(manager)) {
                 for (i in buffer.indices) {
                     seed = (seed * 1664525 + 1013904223) and 0xffffffffL
                     val noise = seed.toDouble() / 0xffffffffL * 2 - 1
                     low = low * .97 + noise * .03
                     val t = sample++ / RATE.toDouble()
                     val signal = when (kind) {
-                        "cue" -> sin(2 * PI * (660 + 330 * t) * t) * exp(-t * 40) * .18
                         "rain" -> noise * .045 + low * .15
                         "thunder" -> low * .35 * (.5 + .5 * sin(t * .7)) + noise * .025
                         else -> low * .3 * (.65 + .35 * sin(t * .8))
                     }
                     buffer[i] = (signal.coerceIn(-.3, .3) * Short.MAX_VALUE).toInt().toShort()
                 }
-                track.write(buffer, 0, buffer.size, AudioTrack.WRITE_BLOCKING)
+                if(track.write(buffer, 0, buffer.size, AudioTrack.WRITE_BLOCKING) < 0) break
             }
-        } catch (_: IllegalStateException) {
+        } catch (_: RuntimeException) {
             // Audio is an optional enhancement; focus/device changes must not affect forecasts.
         } finally {
             runCatching { track?.stop() }; track?.release(); manager.abandonAudioFocusRequest(request)
         }
     }
-    fun cue(context: Context, scope: CoroutineScope) { scope.launch { play(context, "cue", false) } }
-    suspend fun ambience(context: Context, kind: String) = play(context, kind, true)
+    suspend fun ambience(context: Context, kind: String) = play(context, kind)
 }
 
 @Composable fun WeatherAmbience(current: Current?, settings: Settings) {
@@ -74,8 +72,8 @@ object ExperienceAudio {
         current.wind_speed_10m >= 20 -> "wind"
         else -> null
     }
-    LaunchedEffect(settings.sounds, kind, lifecycle) {
-        if (settings.sounds && kind != null) lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+    LaunchedEffect(settings.sounds, settings.ambience, kind, lifecycle) {
+        if (settings.sounds && settings.ambience && kind != null) lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             ExperienceAudio.ambience(context, kind)
         }
     }

@@ -2,7 +2,7 @@ plugins { id("com.android.application"); id("org.jetbrains.kotlin.android"); id(
 android {
  namespace = "com.atmos.weather"
  compileSdk = 35
- defaultConfig { applicationId = "com.atmos.weather"; minSdk = 29; targetSdk = 35; versionCode = 2; versionName = "2.0" }
+ defaultConfig { applicationId = "com.atmos.weather"; minSdk = 29; targetSdk = 35; versionCode = 3; versionName = "2.1" }
  buildFeatures { compose = true }
  testOptions { unitTests.isIncludeAndroidResources = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
@@ -24,6 +24,7 @@ dependencies {
  implementation("androidx.work:work-runtime-ktx:2.10.0")
  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
  testImplementation("junit:junit:4.13.2")
+ testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
  testImplementation("org.robolectric:robolectric:4.14.1")
  testImplementation("androidx.test:core:1.6.1")
  testImplementation("androidx.compose.ui:ui-test-junit4")

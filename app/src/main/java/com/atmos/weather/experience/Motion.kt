@@ -43,14 +43,13 @@ val LocalReducedMotion = staticCompositionLocalOf { false }
     return clock
 }
 
-@Composable fun rememberFeedback(): () -> Unit {
+@Composable fun rememberFeedback(cue: UiCue = UiCue.Select): () -> Unit {
     val view = LocalView.current
     val settings = LocalExperience.current
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val sounds = LocalUiSounds.current
     return {
         // No IGNORE_GLOBAL_SETTING flag: Android's own haptic setting remains authoritative.
         if (settings.haptics) view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-        if (settings.sounds) ExperienceAudio.cue(context, scope)
+        if (settings.sounds) sounds?.play(cue)
     }
 }
