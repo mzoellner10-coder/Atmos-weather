@@ -24,18 +24,25 @@ class WidgetConfigActivity:ComponentActivity() {
  setResult(RESULT_CANCELED)
  if(id==AppWidgetManager.INVALID_APPWIDGET_ID) {finish();return}
  val app=application as AtmosApp
+ val saved=getSharedPreferences("widgets",MODE_PRIVATE)
  setContent {
  val settings by app.preferences.flow.collectAsState(initial=com.atmos.weather.data.Settings())
  var selected by remember {mutableIntStateOf(0)}
- var style by remember {mutableStateOf("OLED")}
- var opacity by remember {mutableFloatStateOf(1f)}
- var f by remember {mutableStateOf(false)}
- var showCity by remember {mutableStateOf(true)}
- var metrics by remember {mutableStateOf(setOf("Feels like","Wind","Humidity","UV","Rain"))}
- LaunchedEffect(settings.city) { f=settings.fahrenheit; selected=settings.selected }
+ var style by remember {mutableStateOf(saved.getString("${id}_style","OLED") ?: "OLED")}
+ var illustration by remember {mutableStateOf(saved.getString("${id}_illustration","Sculpted") ?: "Sculpted")}
+ var opacity by remember {mutableFloatStateOf(saved.getInt("${id}_opacity",100)/100f)}
+ var f by remember {mutableStateOf(saved.getBoolean("${id}_fahrenheit",false))}
+ var showCity by remember {mutableStateOf(saved.getBoolean("${id}_showcity",true))}
+ var metrics by remember {mutableStateOf(saved.getStringSet("${id}_metrics",setOf("Feels like","Wind","Humidity","UV","Rain")).orEmpty())}
+ LaunchedEffect(settings.cities) {
+ if(!saved.contains("${id}_fahrenheit"))f=settings.fahrenheit
+ val key=saved.getString("${id}_city",null)
+ val index=settings.cities.indexOfFirst {"${it.latitude},${it.longitude}"==key}
+ selected=if(index>=0)index else settings.selected
+ }
  MaterialTheme(colorScheme=darkColorScheme()) {
  Surface(color=Color.Black) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
- Text("Your Atmos widget",style=MaterialTheme.typography.headlineLarge)
+ Text("Atmos / 02 widget",style=MaterialTheme.typography.headlineLarge)
  Text("Choose a saved location. Widgets share Atmos's cache and background refresh.")
  if(settings.cities.isEmpty()) {
  Text("Add a city in Atmos first, then return to your widget picker.")
@@ -44,6 +51,8 @@ class WidgetConfigActivity:ComponentActivity() {
  settings.cities.forEachIndexed { i,city -> Row {RadioButton(selected==i,{selected=i});Text(city.name,Modifier.padding(top=12.dp))} }
  Text("Appearance")
  listOf("OLED","Transparent","Dynamic","Light","Dark").forEach { choice -> Row {RadioButton(style==choice,{style=choice});Text(choice,Modifier.padding(top=12.dp))} }
+ Text("Weather illustration")
+ Row {listOf("Sculpted","Soft").forEach { choice -> FilterChip(selected=illustration==choice,onClick={illustration=choice},label={Text(choice)},modifier=Modifier.padding(end=10.dp))}}
  Text("Opacity ${(opacity*100).toInt()}%")
  Slider(opacity,{opacity=it})
  Row {Checkbox(f,{f=it});Text("Fahrenheit",Modifier.padding(top=12.dp))}
@@ -55,9 +64,9 @@ class WidgetConfigActivity:ComponentActivity() {
  Button(enabled=settings.cities.isNotEmpty(),onClick={
  val city=settings.cities[selected.coerceAtMost(settings.cities.lastIndex)]
  getSharedPreferences("widgets",MODE_PRIVATE).edit().putString("${id}_city","${city.latitude},${city.longitude}")
- .putStringSet("${id}_metrics",metrics).putString("${id}_style",style).putInt("${id}_opacity",(opacity*100).toInt()).putBoolean("${id}_fahrenheit",f).putBoolean("${id}_showcity",showCity).apply()
+ .putString("${id}_illustration",illustration).putStringSet("${id}_metrics",metrics).putString("${id}_style",style).putInt("${id}_opacity",(opacity*100).toInt()).putBoolean("${id}_fahrenheit",f).putBoolean("${id}_showcity",showCity).apply()
  lifecycleScope.launch {updateWidgets(this@WidgetConfigActivity);setResult(RESULT_OK,Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id));finish()}
- }) {Text("Add widget")}
+ }) {Text("Save widget")}
  } }
  }
  }

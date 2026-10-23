@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
-class AtmosApp: Application() {
+open class AtmosApp: Application() {
  val preferences by lazy { Preferences(this) }
  val repository by lazy { WeatherRepository(this) }
  override fun onCreate() { super.onCreate(); kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default).launch { scheduleRefresh(this@AtmosApp, preferences.flow.first().refresh) } }
@@ -38,6 +38,7 @@ class WeatherWorker(context: android.content.Context, params: WorkerParameters):
  if(distance[0]>3000) {
  val moved=current.copy(latitude=fix.latitude,longitude=fix.longitude)
  app.preferences.update { s -> s.copy(cities=s.cities.map { if(it==current)moved else it }) }
+ com.atmos.weather.widgets.moveWidgetLocation(app,current,moved)
  settings=app.preferences.flow.first()
  }
  }

@@ -22,7 +22,7 @@ class WeatherViewModel(application: Application): AndroidViewModel(application) 
  init { viewModelScope.launch { settings.map { it.city }.distinctUntilChanged().collect { refresh() } } }
  fun refresh(force: Boolean = false) {
  loadJob?.cancel()
- val city = settings.value.city ?: return
+ val city = settings.value.city ?: run { mutable.value = WeatherState(); return }
  loadJob = viewModelScope.launch {
  val cached = app.repository.cached(city)
  mutable.value = WeatherState(cached, true, cached = true)

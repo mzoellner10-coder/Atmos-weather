@@ -1,6 +1,6 @@
-# Atmos Weather
+# Atmos Weather 2.0
 
-Native Kotlin + Jetpack Compose weather app for Android 10+ (`com.atmos.weather`). Hybrid OLED is the default; weather gradients and true black modes are available. No account or API key is required.
+Native Kotlin + Jetpack Compose weather app for Android 10+ (`com.atmos.weather`). Hybrid is the default; weather gradients and true black modes are available. No account or API key is required.
 
 ## Build and install
 
@@ -45,3 +45,7 @@ Required development network destinations: `api.open-meteo.com`, `geocoding-api.
 - `app/src/test/`: provider parsing and weather conversion checks
 
 Animations pause outside the resumed lifecycle, respect Android's animator-duration setting, and can be reduced or disabled in-app. Widget grid sizes are launcher hints: Samsung and other launchers may apply their own spacing and need device testing. No emulator or physical-device rendering/performance validation is implied by a successful APK build.
+
+## 2.0 redesign
+
+See [the redesign notes](docs/REDESIGN.md) for the dimensional scene, seven matching widgets, AM/PM formatting, motion/audio controls, migration behavior, validation, and debug-signing compatibility. New builds use version code 2 and the CI artifact is `atmos-weather-v2-debug`. Android Studio and `./gradlew assembleDebug` remain supported.
