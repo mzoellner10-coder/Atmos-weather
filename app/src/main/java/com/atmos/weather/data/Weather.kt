@@ -27,7 +27,7 @@ data class Daily(val time: List<String>, val temperature_2m_max: List<Double>, v
 data class Forecast(val current: Current, val hourly: Hourly, val daily: Daily, val timezone: String)
 data class AirCurrent(val us_aqi: Double?, val pm2_5: Double?, val pm10: Double?)
 data class Air(val current: AirCurrent?)
-data class AlertProperties(val event: String?, val headline: String?, val description: String?, val instruction: String?)
+data class AlertProperties(val event: String?, val headline: String?, val description: String?, val instruction: String?, val sent: String? = null, val expires: String? = null)
 data class AlertFeature(val properties: AlertProperties)
 data class Alerts(val features: List<AlertFeature> = emptyList())
 data class Weather(val city: City, val forecast: Forecast, val air: Air?, val alerts: Alerts?, val fetchedAt: Long,
@@ -52,13 +52,13 @@ interface WeatherApi {
 @Database(entities = [CacheEntry::class], version = 1, exportSchema = false)
 abstract class WeatherDatabase: RoomDatabase() { abstract fun weatherDao(): WeatherDao }
 data class RefreshResult(val weather: Weather, val fromCache: Boolean)
-class WeatherRepository(context: Context) {
+class WeatherRepository(context: Context, database: WeatherDatabase? = null, service: WeatherApi? = null) {
  private val gson = Gson()
- private val dao = Room.databaseBuilder(context, WeatherDatabase::class.java, "atmos.db").build().weatherDao()
+ private val dao = (database ?: Room.databaseBuilder(context, WeatherDatabase::class.java, "atmos.db").build()).weatherDao()
  private val mutex = Mutex()
  private val client = OkHttpClient.Builder().cache(Cache(File(context.cacheDir, "http"), 20L * 1024 * 1024))
- .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().header("User-Agent", "AtmosWeather/1.0 (personal non-commercial Android weather application)").build()) }.build()
- val api: WeatherApi = Retrofit.Builder().baseUrl("https://api.open-meteo.com/").client(client).addConverterFactory(GsonConverterFactory.create()).build().create(WeatherApi::class.java)
+ .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().header("User-Agent", "AtmosWeather/2.0 (personal non-commercial Android weather application)").build()) }.build()
+ val api: WeatherApi = service ?: Retrofit.Builder().baseUrl("https://api.open-meteo.com/").client(client).addConverterFactory(GsonConverterFactory.create()).build().create(WeatherApi::class.java)
  private fun key(city: City) = "${city.latitude},${city.longitude}"
  suspend fun cached(city: City): Weather? = dao.get(key(city))?.let { runCatching { gson.fromJson(it.json, Weather::class.java) }.getOrNull() }
  suspend fun refresh(city: City, force: Boolean = false): RefreshResult = mutex.withLock {

@@ -1,20 +1,22 @@
-# Validation
+# Atmos Weather 2.0 validation
 
-The cloud machine built the native debug APK with:
+Run from the project root:
 
 ```sh
-python3 tools/setup_cloud.py
 tools/cloud-build.sh assembleDebug testDebugUnitTest lintDebug
 ```
 
-The final build completed successfully. Seven JUnit tests executed: seven passed, zero failed, zero skipped. They cover Open-Meteo forecast/geocoding/air-quality parsing, Celsius/Fahrenheit conversion, WMO condition mapping, location-free initial settings, cache expiry/clock boundaries, and timezone-aware selection of forecast hours, including expired forecast horizons.
+The local check suite executes 19 tests with no skipped tests:
 
-Android lint completed with zero errors and two nonblocking warnings: KAPT can be replaced with KSP, and the older allowBackup flag triggers DataExtractionRules guidance despite the explicit Android 12+ exclusion rules. No lint errors were suppressed and no test assertions were disabled.
+- Seven existing forecast parsing, condition mapping, units, cache-boundary and forecast-hour tests.
+- Six v2 tests covering the requested AM/PM examples, opt-in 24-hour format, selected-city zones and daylight-saving transitions, solar progression, legacy settings, AQI/UV categories and forecast-based day/night art.
+- Four native Android/Robolectric tests for original sculptures, all seven widget renderers at nominal and resized dimensions, a real Room cache through concurrent refreshes and offline failures, and preservation of widget appearance/location bindings during passive movement.
+- Two Compose/Robolectric smoke tests for actual navigation and persisted time preference, and a loaded dashboard rendering from a clearly identified test fixture.
 
-The APK passed `apksigner verify --verbose` (v2 signing) and `zipalign -c 4`. Package metadata reports `com.atmos.weather`, version 1.0, minimum API 29 and target API 35. This is a debug-signed test build.
+Native images are generated in `app/build/reports/visuals`; they are simulator/test-fixture renderings, not phone screenshots or live weather demonstrations. Test results and lint reports are under `app/build/reports/`. Tests do not disable assertions or bypass artifact/TLS verification.
 
-Gradle distribution, Gradle wrapper JAR, Temurin JDK and Android command-line tools were checked against their published checksums. Java uses the managed system CA trust and inherited proxy; TLS verification remains enabled. Setup was rerun successfully with already-installed tools.
+The v2 debug APK has application ID `com.atmos.weather`, minimum API 29, target API 35, version code 2 and version name 2.0. Local APK signing matches the prior local v1 certificate (`9bdbcf05e04cdf22798e36854305ed8023368d6fbdb92963acfd2eacdf1507b6`). A fresh GitHub runner's default debug certificate may differ from a previously installed APK. No keystore is committed; updating an installed APK requires a matching signer.
 
-Live Open-Meteo requests from this cloud machine received a proxy policy denial. The four provider domains were saved to the environment configuration draft, along with installation and startup instructions; draft saving does not apply or publish them. Live provider responses, offline behavior on a phone, permissions, widget placement/resizing, Samsung One UI appearance, animation performance and foldable layouts have not been validated on an emulator or physical device.
+The GitHub workflow builds `atmos-weather-v2-debug` and uploads reports on pushes/PRs/manual dispatch. See the actual Actions run for its current result; local checks alone do not establish CI success.
 
-Before release, install on the target phone, select a city and check current, hourly, daily, precipitation and air-quality data; verify U.S. alerts where available; disconnect networking to check cached forecasts; add and resize all seven widgets; exercise approximate/denied location and background refresh. There is no claim of production readiness or completed device testing.
+This environment's proxy blocks live weather-provider requests and the inspiration website. Existing free provider APIs, schemas, caching, permissions and WorkManager scheduling were preserved; no new live weather values are invented. Physical Samsung One UI placement, high-refresh-rate performance, foldable layouts, sound/audio focus and real permission behavior still require device testing.
