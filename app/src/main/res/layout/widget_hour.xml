@@ -1,0 +1,5 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:paddingTop="8dp">
+<TextView android:id="@+id/hour" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#C6DDFF" android:textSize="12sp"/>
+<TextView android:id="@+id/value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="16sp"/>
+<TextView android:id="@+id/chance" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#C6DDFF" android:textSize="12sp"/>
+</LinearLayout>
