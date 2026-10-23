@@ -39,6 +39,7 @@ class GraphicsAndCacheTest {
         examples.forEachIndexed {i,(code,day)->
             val image=WeatherArt.bitmap(code,day,256)
             assertEquals(0,Color.alpha(image.getPixel(0,0)))
+            assertFalse("Soft style must be distinct for every weather scene",image.sameAs(WeatherArt.bitmap(code,day,256,"Soft")))
             assertTrue((0 until 256 step 8).sumOf {x->(0 until 256 step 8).count {y->Color.alpha(image.getPixel(x,y))>0}}>80)
             val x=(i%4)*250f;val y=(i/4)*400f+60
             canvas.drawBitmap(image,null,RectF(x,y,x+250,y+250),paint)

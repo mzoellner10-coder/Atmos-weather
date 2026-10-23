@@ -56,7 +56,7 @@ object WeatherArt {
         fun moon() {
             paint.shader=RadialGradient(480f,420f,390f,intArrayOf(0x445C61D8,Color.TRANSPARENT),null,Shader.TileMode.CLAMP)
             canvas.drawCircle(480f,420f,390f,paint);paint.shader=null
-            ellipse(490f,430f,230f,230f,intArrayOf(0xFFF3F2FF.toInt(),0xFFBFC4EB.toInt(),0xFF616D9C.toInt()))
+            ellipse(490f,430f,230f,230f,if(flat) intArrayOf(0xFFF5F4FF.toInt(),0xFFA9B8DC.toInt()) else intArrayOf(0xFFF3F2FF.toInt(),0xFFBFC4EB.toInt(),0xFF616D9C.toInt()))
             listOf(Triple(400f,335f,42f),Triple(565f,470f,58f),Triple(450f,555f,28f),Triple(595f,325f,20f)).forEach { (x,y,r) ->
                 ellipse(x,y,r,r*.85f,intArrayOf(0x994B567F.toInt(),0x227580AD))
                 paint.color=0x55FFFFFF;paint.style=Paint.Style.STROKE;paint.strokeWidth=3f
@@ -67,7 +67,10 @@ object WeatherArt {
             canvas.save();canvas.translate(cx,cy);canvas.scale(scale,scale)
             // A dark projected underside, lobe shading, and reflected rim create depth.
             ellipse(5f,125f,315f,52f,intArrayOf(0x55000000,Color.TRANSPARENT))
-            val palette=if(storm) intArrayOf(0xFF818EA9.toInt(),0xFF414D68.toInt(),0xFF1A223B.toInt())
+            val palette=if(flat && storm) intArrayOf(0xFF929AC4.toInt(),0xFF5B628F.toInt())
+                else if(flat && !day) intArrayOf(0xFFD6DDF4.toInt(),0xFF849ABF.toInt())
+                else if(flat) intArrayOf(0xFFFFFFFF.toInt(),0xFFBDDBF0.toInt())
+                else if(storm) intArrayOf(0xFF818EA9.toInt(),0xFF414D68.toInt(),0xFF1A223B.toInt())
                 else if(!day) intArrayOf(0xFFD0D8F4.toInt(),0xFF7A8DAE.toInt(),0xFF384C73.toInt())
                 else intArrayOf(0xFFFFFFFF.toInt(),0xFFD5E3F2.toInt(),0xFF788FAE.toInt())
             ellipse(-150f,5f,142f,140f,palette)
@@ -84,7 +87,7 @@ object WeatherArt {
             path.cubicTo(x-r*.2f,y-r*.7f,x-r,y,x-r,y+r*.25f)
             path.cubicTo(x-r,y+r*1.4f,x+r,y+r*1.4f,x+r,y+r*.25f)
             path.cubicTo(x+r,y,x+r*.2f,y-r*.7f,x,y-r*1.5f)
-            paint.shader=LinearGradient(x-r,y-r,x+r,y+r,intArrayOf(0xFFC4F8FF.toInt(),0xFF459FE4.toInt(),0xFF1B497D.toInt()),null,Shader.TileMode.CLAMP)
+            paint.shader=LinearGradient(x-r,y-r,x+r,y+r,(if(flat) intArrayOf(0xFFD9FCFF.toInt(),0xFF86CCF0.toInt()) else intArrayOf(0xFFC4F8FF.toInt(),0xFF459FE4.toInt(),0xFF1B497D.toInt())),null,Shader.TileMode.CLAMP)
             canvas.drawPath(path,paint);paint.shader=null
         }
         fun flake(x: Float,y: Float,r: Float) {
